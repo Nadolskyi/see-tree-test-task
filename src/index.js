@@ -1,8 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import mapboxgl from 'mapbox-gl';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+
+mapboxgl.accessToken = 'pk.eyJ1IjoibWtvemFrMDEwOCIsImEiOiJjamljeGF4Y3MwNGZrM3BvNmMxd2hsY2wzIn0.ErvzY580HhOEokFZR1GOTg';
 
 ReactDOM.render(
   <React.StrictMode>
