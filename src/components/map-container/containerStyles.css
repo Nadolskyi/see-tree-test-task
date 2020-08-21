@@ -5,3 +5,16 @@
   left: 0;
   right: 0;
 }
+
+.score-block {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  margin: 40px;
+}
+
+.score-block > div {
+  font-size: 24px;
+  font-weight: bolder;
+}

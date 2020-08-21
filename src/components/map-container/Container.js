@@ -32,6 +32,25 @@ const Container = () => {
       zoom: zoom
     });
 
+    const canvas = map.getCanvasContainer();
+    let currentFeatureId;
+
+    const onMove = (e) => {
+      canvas.style.cursor = "grabbing";
+      var currentMarker = points.features.find(obj => {
+        return obj.properties.id === currentFeatureId
+      })
+      currentMarker.geometry.coordinates = e.lngLat.toArray();
+      setPoints({ ...points })
+      map.getSource("random-points-data").setData(points);
+    }
+
+    const onUp = () => {
+      canvas.style.cursor = "";
+      map.off("mousemove", onMove);
+      map.off("touchmove", onMove);
+    }
+
     map.on("load", () => {
       map.addSource("random-points-data", {
         type: "geojson",
@@ -40,15 +59,13 @@ const Container = () => {
           features: []
         }
       });
+
       map.addLayer({
         id: "random-points-layer",
         source: "random-points-data",
         type: 'circle',
         paint: {
-          // "icon-image": "amusement-park-15",
-          // "icon-padding": 0,
-          // "icon-allow-overlap": true,
-          'circle-radius': 6.5,
+          'circle-radius': 7.5,
           'circle-color': [
             'match',
             ['get', 'score'],
@@ -63,27 +80,50 @@ const Container = () => {
             4,
             'lime',
             5,
-            'green'
+            'green',
+            'grey'
           ],
         }
       });
     });
 
     map.on('click', (e) => {
-
       const newPoints = setFeaturePoint(e.lngLat.toArray());
-      console.log('newPoints', newPoints)
-      setPoints(newPoints)
       map.getSource("random-points-data").setData(newPoints);
+    });
+
+    // When the cursor enters a feature in the point layer, prepare for dragging.
+    map.on("mouseenter", "random-points-layer", function () {
+      canvas.style.cursor = "move";
+    });
+
+    map.on("mouseleave", "random-points-layer", function () {
+      canvas.style.cursor = "";
+    });
+
+    map.on("mousedown", "random-points-layer", function (e) {
+      currentFeatureId = e.features[0].properties.id;
+      e.preventDefault();
+      canvas.style.cursor = "grab";
+      map.on("mousemove", onMove);
+      map.once("mouseup", onUp);
+    });
+
+    map.on("touchstart", "random-points-layer", function (e) {
+      if (e.points.length !== 1) return;
+
+      e.preventDefault();
+
+      map.on("touchmove", onMove);
+      map.once("touchend", onUp);
     });
 
   }, [])
 
 
   const setFeaturePoint = (lngLat) => {
-    const newPointsfeatures = [...points.features];
-    debugger
     const randomScore = Math.floor(Math.random() * 6);
+    const randomId = Math.random().toFixed(3) * 1000;
     points.features.push(
       {
         type: 'Feature',
@@ -92,48 +132,33 @@ const Container = () => {
           coordinates: lngLat,
         },
         properties: {
-          id: newPointsfeatures.length + 1,
+          id: randomId,
           score: randomScore
         },
       }
     )
-    console.log('newPointsfeatures', newPointsfeatures)
-    return points
+    setPoints({ ...points });
+    return points;
+  }
+
+  const getSumByScore = (score) => {
+    return points.features.filter((point) => point.properties.score === score).length
   }
 
   return (
     <div>
+      <div className='score-block'>
+        <div>{`Total: ${points.features.length - 1}`}</div>
+        <div>{`Five: ${getSumByScore(5)}`}</div>
+        <div>{`Four: ${getSumByScore(4)}`}</div>
+        <div>{`Three: ${getSumByScore(3)}`}</div>
+        <div>{`Two: ${getSumByScore(2)}`}</div>
+        <div>{`One: ${getSumByScore(1)}`}</div>
+        <div>{`Zero: ${getSumByScore(0)}`}</div>
+      </div>
       <div ref={mapContainer} className="mapContainer" />
     </div>
   )
 }
-
-// class Container extends React.Component {
-//   constructor(props) {
-//     super(props);
-//     this.state = {
-//       lng: 5,
-//       lat: 34,
-//       zoom: 2
-//     };
-//   }
-
-//   componentDidMount() {
-//     const map = new mapboxgl.Map({
-//       container: this.mapContainer,
-//       style: 'mapbox://styles/mapbox/streets-v11',
-//       center: [this.state.lng, this.state.lat],
-//       zoom: this.state.zoom
-//     });
-//   }
-
-//   render() {
-//     return (
-//       <div>
-//         <div ref={el => this.mapContainer = el} className="mapContainer" />
-//       </div>
-//     )
-//   }
-// }
 
 export default Container;
