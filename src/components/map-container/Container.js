@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
-import Marker from '../marker/Marker';
+import Popup from '../popup/Popup';
 import fetchFakeData from '../../api/fetchFakeData';
 import './containerStyles.css';
 
@@ -18,11 +18,12 @@ const Container = () => {
     }]
   }
   const [points, setPoints] = useState(initializeFeatureCollection);
-
+  // const [popupOpen, setPopupOpen] = useState(false);
   const [lngState, setLng] = useState(31);
   const [latState, setLat] = useState(49);
   const [zoom, setZoom] = useState(5);
   const mapContainer = useRef(null);
+  const popUpRef = useRef(new mapboxgl.Popup({ offset: 15 }));
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -34,6 +35,17 @@ const Container = () => {
 
     const canvas = map.getCanvasContainer();
     let currentFeatureId;
+    let isPopupOpen = false;
+
+    const changePointScore = (id, score) => {
+      console.log('score, id', score, id)
+      var currentMarker = points.features.find(obj => {
+        return obj.properties.id === id
+      })
+      currentMarker.properties.score = Number(score);
+      setPoints({ ...points })
+      map.getSource("random-points-data").setData(points);
+    }
 
     const onMove = (e) => {
       canvas.style.cursor = "grabbing";
@@ -81,20 +93,35 @@ const Container = () => {
             'lime',
             5,
             'green',
-            'grey'
+            'violet'
           ],
         }
       });
     });
 
-    map.on('click', (e) => {
-      const newPoints = setFeaturePoint(e.lngLat.toArray());
-      map.getSource("random-points-data").setData(newPoints);
+    map.on("click", "random-points-layer", e => {
+      if (e.features.length) {
+        isPopupOpen = true;
+        const feature = e.features[0];
+        const popupNode = document.createElement("div");
+        ReactDOM.render(<Popup feature={feature} changePointScore={changePointScore} />, popupNode);
+        popUpRef.current
+          .setLngLat(feature.geometry.coordinates)
+          .setDOMContent(popupNode)
+          .addTo(map);
+      }
     });
 
-    // When the cursor enters a feature in the point layer, prepare for dragging.
+    map.on('click', (e) => {
+      if (!isPopupOpen) {
+        const newPoints = setFeaturePoint(e.lngLat.toArray());
+        map.getSource("random-points-data").setData(newPoints);
+      }
+      isPopupOpen = false;
+    });
+
     map.on("mouseenter", "random-points-layer", function () {
-      canvas.style.cursor = "move";
+      canvas.style.cursor = "pointer";
     });
 
     map.on("mouseleave", "random-points-layer", function () {
@@ -119,7 +146,6 @@ const Container = () => {
     });
 
   }, [])
-
 
   const setFeaturePoint = (lngLat) => {
     const randomScore = Math.floor(Math.random() * 6);

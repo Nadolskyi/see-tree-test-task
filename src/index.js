@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import './index.css';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 
