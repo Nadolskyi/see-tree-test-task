@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import Popup from '../popup/Popup';
-import fetchFakeData from '../../api/fetchFakeData';
 import './containerStyles.css';
 
 const Container = () => {
@@ -18,19 +17,15 @@ const Container = () => {
     }]
   }
   const [points, setPoints] = useState(initializeFeatureCollection);
-  // const [popupOpen, setPopupOpen] = useState(false);
-  const [lngState, setLng] = useState(31);
-  const [latState, setLat] = useState(49);
-  const [zoom, setZoom] = useState(5);
   const mapContainer = useRef(null);
   const popUpRef = useRef(new mapboxgl.Popup({ offset: 15 }));
-
+  const [isUploaded, setIsUploaded] = useState(false);
   useEffect(() => {
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
-      center: [lngState, latState],
-      zoom: zoom
+      center: [31, 49],
+      zoom: 5
     });
 
     const canvas = map.getCanvasContainer();
@@ -38,7 +33,6 @@ const Container = () => {
     let isPopupOpen = false;
 
     const changePointScore = (id, score) => {
-      console.log('score, id', score, id)
       var currentMarker = points.features.find(obj => {
         return obj.properties.id === id
       })
@@ -99,6 +93,10 @@ const Container = () => {
       });
     });
 
+    map.on('load', () => {
+      map.getSource("random-points-data").setData(points);
+    });
+
     map.on("click", "random-points-layer", e => {
       if (e.features.length) {
         isPopupOpen = true;
@@ -145,7 +143,7 @@ const Container = () => {
       map.once("touchend", onUp);
     });
 
-  }, [])
+  }, [isUploaded])
 
   const setFeaturePoint = (lngLat) => {
     const randomScore = Math.floor(Math.random() * 6);
@@ -171,6 +169,32 @@ const Container = () => {
     return points.features.filter((point) => point.properties.score === score).length
   }
 
+  const exportToJSON = () => {
+    const pointsToSave = points.features.filter(point => point.properties.id)
+    points.features = pointsToSave;
+    const fileToSave = new Blob([JSON.stringify(points)], {
+      type: 'application/json'
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(fileToSave);
+    a.download = 'markerData.json';
+    a.click();
+  }
+
+  const importFromJSON = (e) => {
+    if (e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = onReaderLoad;
+      reader.readAsText(e.target.files[0]);
+    }
+  }
+
+  const onReaderLoad = (event) => {
+    const uploadedPoints = JSON.parse(event.target.result);
+    setPoints(uploadedPoints);
+    setIsUploaded(!isUploaded);
+  }
+
   return (
     <div>
       <div className='score-block'>
@@ -181,6 +205,9 @@ const Container = () => {
         <div>{`Two: ${getSumByScore(2)}`}</div>
         <div>{`One: ${getSumByScore(1)}`}</div>
         <div>{`Zero: ${getSumByScore(0)}`}</div>
+        <button onClick={exportToJSON}>Export JSON</button>
+        <br />
+        <input type="file" accept="application/JSON" onChange={importFromJSON} />
       </div>
       <div ref={mapContainer} className="mapContainer" />
     </div>
