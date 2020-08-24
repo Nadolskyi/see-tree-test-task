@@ -207,7 +207,9 @@ const Container = () => {
         <div>{`Zero: ${getSumByScore(0)}`}</div>
         <button onClick={exportToJSON}>Export JSON</button>
         <br />
-        <input type="file" accept="application/JSON" onChange={importFromJSON} />
+        <label for="import">Import JSON</label>
+        <br />
+        <input name="import" type="file" accept="application/JSON" onChange={importFromJSON} />
       </div>
       <div ref={mapContainer} className="mapContainer" />
     </div>
