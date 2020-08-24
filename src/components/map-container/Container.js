@@ -33,21 +33,33 @@ const Container = () => {
     let isPopupOpen = false;
 
     const changePointScore = (id, score) => {
-      var currentMarker = points.features.find(obj => {
+      const currentMarker = points.features.find(obj => {
         return obj.properties.id === id
       })
       currentMarker.properties.score = Number(score);
+      popUpRef.current.remove();
       setPoints({ ...points })
+      map.getSource("random-points-data").setData(points);
+    }
+
+    const deletePoint = (id) => {
+      const currentMarker = points.features.find(obj => {
+        return obj.properties.id === id
+      });
+      const currentMarkerIndex = points.features.indexOf(currentMarker);
+      points.features.splice(currentMarkerIndex, 1);
+      popUpRef.current.remove();
+      setPoints({ ...points });
       map.getSource("random-points-data").setData(points);
     }
 
     const onMove = (e) => {
       canvas.style.cursor = "grabbing";
-      var currentMarker = points.features.find(obj => {
+      const currentMarker = points.features.find(obj => {
         return obj.properties.id === currentFeatureId
-      })
+      });
       currentMarker.geometry.coordinates = e.lngLat.toArray();
-      setPoints({ ...points })
+      setPoints({ ...points });
       map.getSource("random-points-data").setData(points);
     }
 
@@ -102,7 +114,7 @@ const Container = () => {
         isPopupOpen = true;
         const feature = e.features[0];
         const popupNode = document.createElement("div");
-        ReactDOM.render(<Popup feature={feature} changePointScore={changePointScore} />, popupNode);
+        ReactDOM.render(<Popup feature={feature} changePointScore={changePointScore} deletePoint={deletePoint} />, popupNode);
         popUpRef.current
           .setLngLat(feature.geometry.coordinates)
           .setDOMContent(popupNode)
@@ -198,7 +210,7 @@ const Container = () => {
   return (
     <div>
       <div className='score-block'>
-        <div>{`Total: ${points.features.length - 1}`}</div>
+        <div>{`Total: ${points.features.filter(point => point.properties.id).length}`}</div>
         <div>{`Five: ${getSumByScore(5)}`}</div>
         <div>{`Four: ${getSumByScore(4)}`}</div>
         <div>{`Three: ${getSumByScore(3)}`}</div>
@@ -207,7 +219,7 @@ const Container = () => {
         <div>{`Zero: ${getSumByScore(0)}`}</div>
         <button onClick={exportToJSON}>Export JSON</button>
         <br />
-        <label for="import">Import JSON</label>
+        <label htmlFor="import">Import JSON</label>
         <br />
         <input name="import" type="file" accept="application/JSON" onChange={importFromJSON} />
       </div>

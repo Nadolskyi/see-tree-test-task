@@ -1,10 +1,11 @@
 import React from "react";
 
-const Popup = ({ feature, changePointScore }) => {
+const Popup = ({ feature, changePointScore, deletePoint }) => {
   const { id, score } = feature.properties;
   const changeValue = (e) => {
     return changePointScore(id, e.target.value)
   }
+
   return (
     <div id={`popup-${id}`}>
       <h3>{`Markers score: ${score}`}</h3>
@@ -18,6 +19,9 @@ const Popup = ({ feature, changePointScore }) => {
         <option value="1">One</option>
         <option value="0">Zero</option>
       </select>
+      <br />
+      <br />
+      <button onClick={() => deletePoint(id)}>Delete marker</button>
     </div>
   );
 };
