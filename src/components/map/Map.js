@@ -1,21 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
-import mapboxgl from 'mapbox-gl';
-import Popup from '../popup/Popup';
-import './containerStyles.css';
+import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
+import mapboxgl from "mapbox-gl";
+import Popup from "../popup/Popup";
+import { SCORE_COLORS } from "../const";
+import "./mapStyles.css";
 
-const Container = () => {
+const Map = () => {
   const initializeFeatureCollection = {
     type: "FeatureCollection",
     features: [{
-      type: 'Feature',
+      type: "Feature",
       geometry: {
-        type: 'Point',
+        type: "Point",
         coordinates: [],
       },
       properties: {},
     }]
   }
+
   const [points, setPoints] = useState(initializeFeatureCollection);
   const mapContainer = useRef(null);
   const popUpRef = useRef(new mapboxgl.Popup({ offset: 15 }));
@@ -23,7 +25,7 @@ const Container = () => {
   useEffect(() => {
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
+      style: "mapbox://styles/mapbox/streets-v11",
       center: [31, 49],
       zoom: 5
     });
@@ -32,41 +34,42 @@ const Container = () => {
     let currentFeatureId;
     let isPopupOpen = false;
 
-    const changePointScore = (id, score) => {
-      const currentMarker = points.features.find(obj => {
-        return obj.properties.id === id
-      })
-      currentMarker.properties.score = Number(score);
-      popUpRef.current.remove();
-      setPoints({ ...points })
+    const setNewPoints = (newPoints) => {
+      setPoints({ ...points });
       map.getSource("random-points-data").setData(points);
     }
 
+    const findById = (id) => {
+      return points.features.find(point => point.properties.id === id)
+    }
+
+    const changePointScore = (id, score) => {
+      findById(id).properties.score = Number(score);
+      popUpRef.current.remove();
+      setNewPoints(points);
+    }
+
     const deletePoint = (id) => {
-      const currentMarker = points.features.find(obj => {
-        return obj.properties.id === id
-      });
-      const currentMarkerIndex = points.features.indexOf(currentMarker);
+      const currentMarkerIndex = points.features.indexOf(findById(id));
       points.features.splice(currentMarkerIndex, 1);
       popUpRef.current.remove();
-      setPoints({ ...points });
-      map.getSource("random-points-data").setData(points);
+      setNewPoints(points);
     }
 
     const onMove = (e) => {
       canvas.style.cursor = "grabbing";
-      const currentMarker = points.features.find(obj => {
-        return obj.properties.id === currentFeatureId
-      });
-      currentMarker.geometry.coordinates = e.lngLat.toArray();
-      setPoints({ ...points });
-      map.getSource("random-points-data").setData(points);
+      findById(currentFeatureId).geometry.coordinates = e.lngLat.toArray();
+      setNewPoints(points);
     }
 
     const onUp = () => {
       canvas.style.cursor = "";
       map.off("mousemove", onMove);
       map.off("touchmove", onMove);
+    }
+
+    const getColorByScore = (score) => {
+      return SCORE_COLORS.find(scoreColor => scoreColor.value === score).color
     }
 
     map.on("load", () => {
@@ -81,31 +84,31 @@ const Container = () => {
       map.addLayer({
         id: "random-points-layer",
         source: "random-points-data",
-        type: 'circle',
+        type: "circle",
         paint: {
-          'circle-radius': 7.5,
-          'circle-color': [
-            'match',
-            ['get', 'score'],
+          "circle-radius": 7.5,
+          "circle-color": [
+            "match",
+            ["get", "score"],
             0,
-            'black',
+            getColorByScore(0),
             1,
-            'gray',
+            getColorByScore(1),
             2,
-            'red',
+            getColorByScore(2),
             3,
-            'orange',
+            getColorByScore(3),
             4,
-            'lime',
+            getColorByScore(4),
             5,
-            'green',
-            'violet'
+            getColorByScore(5),
+            "violet"
           ],
         }
       });
     });
 
-    map.on('load', () => {
+    map.on("load", () => {
       map.getSource("random-points-data").setData(points);
     });
 
@@ -122,7 +125,7 @@ const Container = () => {
       }
     });
 
-    map.on('click', (e) => {
+    map.on("click", (e) => {
       if (!isPopupOpen) {
         const newPoints = setFeaturePoint(e.lngLat.toArray());
         map.getSource("random-points-data").setData(newPoints);
@@ -162,9 +165,9 @@ const Container = () => {
     const randomId = Math.random().toFixed(3) * 1000;
     points.features.push(
       {
-        type: 'Feature',
+        type: "Feature",
         geometry: {
-          type: 'Point',
+          type: "Point",
           coordinates: lngLat,
         },
         properties: {
@@ -185,11 +188,11 @@ const Container = () => {
     const pointsToSave = points.features.filter(point => point.properties.id)
     points.features = pointsToSave;
     const fileToSave = new Blob([JSON.stringify(points)], {
-      type: 'application/json'
+      type: "application/json"
     });
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = URL.createObjectURL(fileToSave);
-    a.download = 'markerData.json';
+    a.download = "markerData.json";
     a.click();
   }
 
@@ -209,14 +212,11 @@ const Container = () => {
 
   return (
     <div>
-      <div className='score-block'>
+      <div className="score-block">
         <div>{`Total: ${points.features.filter(point => point.properties.id).length}`}</div>
-        <div>{`Five: ${getSumByScore(5)}`}</div>
-        <div>{`Four: ${getSumByScore(4)}`}</div>
-        <div>{`Three: ${getSumByScore(3)}`}</div>
-        <div>{`Two: ${getSumByScore(2)}`}</div>
-        <div>{`One: ${getSumByScore(1)}`}</div>
-        <div>{`Zero: ${getSumByScore(0)}`}</div>
+        {SCORE_COLORS.map((score) => {
+          return <div key={score.color}>{`${score.label}: ${getSumByScore(score.value)}`}</div>
+        })}
         <button onClick={exportToJSON}>Export JSON</button>
         <br />
         <label htmlFor="import">Import JSON</label>
@@ -228,4 +228,4 @@ const Container = () => {
   )
 }
 
-export default Container;
+export default Map;

@@ -1,8 +1,8 @@
 import React from 'react';
-import Container from './components/map-container/Container'
+import Map from './components/map/Map'
 
 function App() {
-  return <Container />;
+  return <Map />;
 }
 
 export default App;

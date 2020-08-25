@@ -1,4 +1,5 @@
 import React from "react";
+import { SCORE_COLORS } from "../const";
 
 const Popup = ({ feature, changePointScore, deletePoint }) => {
   const { id, score } = feature.properties;
@@ -12,12 +13,9 @@ const Popup = ({ feature, changePointScore, deletePoint }) => {
       <label htmlFor="scores">Change score:</label>
       <br />
       <select name="scores" onChange={changeValue} defaultValue={score}>
-        <option value="5">Five</option>
-        <option value="4">Four</option>
-        <option value="3">Three</option>
-        <option value="2">Two</option>
-        <option value="1">One</option>
-        <option value="0">Zero</option>
+        {SCORE_COLORS.map((score) => {
+          return <option key={score.color} value={score.value}>{score.label}</option>
+        })}
       </select>
       <br />
       <br />
